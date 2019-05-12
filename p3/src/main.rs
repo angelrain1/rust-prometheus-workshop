@@ -37,7 +37,7 @@ fn api_set(map: web::Data<KvMap>, param: web::Path<(String, String)>) -> impl Re
         .start_timer();
 
     let mut write_handle = map.write_handle.lock().unwrap();
-    let (key, value) = (&param.0, &param.1);
+    let (key, value) = param.into_inner();
     KEY_FLOW
         .with_label_values(&["write"])
         .inc_by(key.len() as f64);
@@ -45,9 +45,10 @@ fn api_set(map: web::Data<KvMap>, param: web::Path<(String, String)>) -> impl Re
         .with_label_values(&["write"])
         .inc_by(value.len() as f64);
 
-    write_handle.update(key.to_owned(), value.to_owned());
+    let response = format!("Put key {} = {}", key, value);
+    write_handle.update(key, value);
     write_handle.refresh();
-    format!("Put key {} = {}", key, value)
+    response
 }
 
 fn main() -> std::io::Result<()> {
